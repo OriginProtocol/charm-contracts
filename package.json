@@ -1,0 +1,11 @@
+{
+  "name": "l2-eth-redeem",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Shahul Hameed <10547529+shahthepro@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@chainlink/contracts": "^1.1.1",
+    "@chainlink/contracts-ccip": "^1.4.0"
+  }
+}
