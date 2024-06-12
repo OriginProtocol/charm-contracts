@@ -31,29 +31,13 @@ contract LiquidityManagerTest is Test {
         managerEthProxy = new MainnetLiquidityManagerProxy();
         managerArbProxy = new ArbLiquidityManagerProxy();
 
-        managerEth = new CrossChainLiquidityManager(
-            address(mockRouter),
-            arbChainSelector,
-            address(managerArbProxy)
-        );
+        managerEth = new CrossChainLiquidityManager(address(mockRouter), arbChainSelector, address(managerArbProxy));
 
-        managerArb = new CrossChainLiquidityManager(
-            address(mockRouter),
-            mainnetChainSelector,
-            address(managerEthProxy)
-        );
+        managerArb = new CrossChainLiquidityManager(address(mockRouter), mainnetChainSelector, address(managerEthProxy));
 
-        managerEthProxy.initialize(
-            address(managerEth),
-            owner,
-            hex""
-        );
+        managerEthProxy.initialize(address(managerEth), owner, hex"");
 
-        managerArbProxy.initialize(
-            address(managerArb),
-            owner,
-            hex""
-        );
+        managerArbProxy.initialize(address(managerArb), owner, hex"");
 
         managerEth = CrossChainLiquidityManager(payable(address(managerEthProxy)));
         managerArb = CrossChainLiquidityManager(payable(address(managerArbProxy)));
@@ -77,13 +61,8 @@ contract LiquidityManagerTest is Test {
 
         console.log("Balance Before", address(0x122).balance);
 
-        bytes32 messageId = managerArb.swapExactTokensForTokens{ value: 1 ether }(
-            ethToken,
-            ethToken,
-            1 ether,
-            0.98 ether,
-            address(0x122)
-        );
+        bytes32 messageId =
+            managerArb.swapExactTokensForTokens{value: 1 ether}(ethToken, ethToken, 1 ether, 0.98 ether, address(0x122));
 
         console.log("Message ID", vm.toString(messageId));
         console.log("Balance After", address(0x122).balance);

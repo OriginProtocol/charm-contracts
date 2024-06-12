@@ -29,7 +29,7 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
 
     address public constant token0 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public constant token1 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
- 
+
     event FeeRecipientChanged(address oldRecipient, address newRecipient);
     event FeeCollected(address recipient, uint256 fee);
     event TradeRateChanged(uint256 oldRate, uint256 newRate);
@@ -79,7 +79,9 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         _;
     }
 
-    constructor (address _l2Router, uint64 _otherChainSelector, address _otherChainLiquidityManager) CCIPReceiver(_l2Router) {
+    constructor(address _l2Router, uint64 _otherChainSelector, address _otherChainLiquidityManager)
+        CCIPReceiver(_l2Router)
+    {
         // Make sure nobody owns the implementation
         _setOwner(address(0));
 
@@ -189,10 +191,7 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         // }
 
         // Send message to other chain
-        messageId = router.ccipSend{ value: ccipFees }(
-            otherChainSelector,
-            message
-        );
+        messageId = router.ccipSend{value: ccipFees}(otherChainSelector, message);
 
         emit TransferInitiated(messageId);
     }
@@ -200,10 +199,7 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
     function _ccipReceive(Client.Any2EVMMessage memory message)
         internal
         override
-        onlyOtherChainLiquidityManager(
-            message.sourceChainSelector,
-            abi.decode(message.sender, (address))
-        )
+        onlyOtherChainLiquidityManager(message.sourceChainSelector, abi.decode(message.sender, (address)))
         onlyIfNotCursed
     {
         if (messageProcessed[message.messageId]) {
@@ -243,7 +239,7 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         // Accept all ETH sent to this address as liquidity
         if (_liquidityNeeded >= msg.value) {
             additionalLiquidityNeeded = _liquidityNeeded - msg.value;
-        }  else if (_liquidityNeeded != 0) {
+        } else if (_liquidityNeeded != 0) {
             additionalLiquidityNeeded = 0;
         }
 

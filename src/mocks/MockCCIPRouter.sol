@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { Client } from "@ccip/libraries/Client.sol";
+import {Client} from "@ccip/libraries/Client.sol";
 
-import { CCIPReceiver } from "@ccip/applications/CCIPReceiver.sol";
+import {CCIPReceiver} from "@ccip/applications/CCIPReceiver.sol";
 
 contract MockCCIPRouter {
     uint256 public feeToReturn;
@@ -16,20 +16,20 @@ contract MockCCIPRouter {
 
     constructor() {}
 
-    function ccipSend(
-        uint64 destinationChainSelector,
-        Client.EVM2AnyMessage calldata message
-    ) external payable returns (bytes32) {
+    function ccipSend(uint64 destinationChainSelector, Client.EVM2AnyMessage calldata message)
+        external
+        payable
+        returns (bytes32)
+    {
         if (forwardRequests) {
             address receiver = abi.decode(message.receiver, (address));
-            Client.Any2EVMMessage memory messageToForward = Client
-                .Any2EVMMessage({
-                    sender: abi.encode(msg.sender),
-                    data: message.data,
-                    destTokenAmounts: message.tokenAmounts,
-                    sourceChainSelector: nextSourceChainSelector,
-                    messageId: bytes32(hex"deadfeed")
-                });
+            Client.Any2EVMMessage memory messageToForward = Client.Any2EVMMessage({
+                sender: abi.encode(msg.sender),
+                data: message.data,
+                destTokenAmounts: message.tokenAmounts,
+                sourceChainSelector: nextSourceChainSelector,
+                messageId: bytes32(hex"deadfeed")
+            });
 
             CCIPReceiver(receiver).ccipReceive(messageToForward);
         } else {
@@ -60,11 +60,7 @@ contract MockCCIPRouter {
         return bytes32(hex"deadfeed");
     }
 
-    function getFee(uint64, Client.EVM2AnyMessage calldata)
-        external
-        view
-        returns (uint256)
-    {
+    function getFee(uint64, Client.EVM2AnyMessage calldata) external view returns (uint256) {
         return feeToReturn;
     }
 

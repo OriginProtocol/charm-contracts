@@ -23,8 +23,7 @@ contract Deploy002Script is Script {
 
     address public constant deployer = 0x58890A9cB27586E83Cb51d2d26bbE18a1a647245;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -34,35 +33,20 @@ contract Deploy002Script is Script {
         managerArbProxy = ArbLiquidityManagerProxy(payable(0xa6774B8A0C61e724BDA845b22b0ACB42c4f5c100));
 
         if (block.chainid == 1) {
-            managerEth = new CrossChainLiquidityManager(
-                mainnetCCIPRouter,
-                arbChainSelector,
-                address(managerArbProxy)
-            );
+            managerEth = new CrossChainLiquidityManager(mainnetCCIPRouter, arbChainSelector, address(managerArbProxy));
 
-            managerEthProxy.initialize(
-                address(managerEth),
-                deployer,
-                hex""
-            );
+            managerEthProxy.initialize(address(managerEth), deployer, hex"");
 
             managerEth = CrossChainLiquidityManager(payable(address(managerEthProxy)));
+            managerEth.initialize(deployer, 0.98 ether);
         } else {
-            managerArb = new CrossChainLiquidityManager(
-                arbCCIPRouter,
-                mainnetChainSelector,
-                address(managerEthProxy)
-            );
+            managerArb = new CrossChainLiquidityManager(arbCCIPRouter, mainnetChainSelector, address(managerEthProxy));
 
-            managerArbProxy.initialize(
-                address(managerArb),
-                deployer,
-                hex""
-            );
+            managerArbProxy.initialize(address(managerArb), deployer, hex"");
 
             managerArb = CrossChainLiquidityManager(payable(address(managerArbProxy)));
+            managerArb.initialize(deployer, 0.98 ether);
         }
-
 
         vm.stopBroadcast();
     }

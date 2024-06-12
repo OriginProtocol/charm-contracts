@@ -14,3 +14,7 @@ interface IERC20 {
 interface ICCIPRouter {
     function getArmProxy() external view returns (address);
 }
+
+interface IArbSys {
+    function withdrawEth(address destination) external payable;
+}
