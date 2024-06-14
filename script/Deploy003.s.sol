@@ -4,10 +4,11 @@ pragma solidity ^0.8.23;
 import {Script, console} from "forge-std/Script.sol";
 
 import {CrossChainLiquidityManager} from "../src/CrossChainLiquidityManager.sol";
+import {ArbLiquidityManager} from "../src/ArbLiquidityManager.sol";
 import {MainnetLiquidityManagerProxy} from "../src/proxies/MainnetLiquidityManagerProxy.sol";
 import {ArbLiquidityManagerProxy} from "../src/proxies/ArbLiquidityManagerProxy.sol";
 
-contract Deploy002Script is Script {
+contract Deploy003Script is Script {
     MainnetLiquidityManagerProxy public managerEthProxy;
     ArbLiquidityManagerProxy public managerArbProxy;
     CrossChainLiquidityManager public managerEth;
@@ -35,17 +36,21 @@ contract Deploy002Script is Script {
         if (block.chainid == 1) {
             managerEth = new CrossChainLiquidityManager(mainnetCCIPRouter, arbChainSelector, address(managerArbProxy));
 
-            managerEthProxy.initialize(address(managerEth), deployer, hex"");
+            // Upgrade implementation
+            managerEthProxy.upgradeTo(address(managerEth));
 
+            // Change fee
             managerEth = CrossChainLiquidityManager(payable(address(managerEthProxy)));
-            managerEth.initialize(0.98 ether);
+            managerEth.setTradeRate(0.9999 ether);
         } else {
-            managerArb = new CrossChainLiquidityManager(arbCCIPRouter, mainnetChainSelector, address(managerEthProxy));
+            managerArb = new ArbLiquidityManager(arbCCIPRouter, mainnetChainSelector, address(managerEthProxy));
 
-            managerArbProxy.initialize(address(managerArb), deployer, hex"");
+            // Upgrade implementation
+            managerArbProxy.upgradeTo(address(managerArb));
 
-            managerArb = CrossChainLiquidityManager(payable(address(managerArbProxy)));
-            managerArb.initialize(0.98 ether);
+            // Change fee
+            managerArb = ArbLiquidityManager(payable(address(managerArbProxy)));
+            managerArb.setTradeRate(0.9995 ether);
         }
 
         vm.stopBroadcast();

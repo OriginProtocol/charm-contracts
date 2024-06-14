@@ -13,9 +13,6 @@ import {IERC20, ICCIPRouter} from "./Interfaces.sol";
 contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
     uint256 public traderate;
 
-    uint256 public pendingFee;
-    address public feeRecipient;
-
     bool internal initialized;
 
     mapping(bytes32 => bool) public messageProcessed;
@@ -30,17 +27,15 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
     address public constant token0 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public constant token1 = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    event FeeRecipientChanged(address oldRecipient, address newRecipient);
-    event FeeCollected(address recipient, uint256 fee);
     event TradeRateChanged(uint256 oldRate, uint256 newRate);
     event PendingBalanceClaimed(address recipient, uint256 amount);
     event TransferInitiated(bytes32 messageId);
     event TransferCompleted(bytes32 messageId);
     event PendingBalanceUpdated(address recipient, uint256 balance);
-    event LiquidityUpdated();
+    event LiquidityAdded(address sender, uint256 amount);
+    event LiquidityRemoved(address recipient, uint256 amount);
 
     error ETHTransferFailed();
-    error NoFeeRecipientSet();
     error UnsupportedFromToken();
     error UnsupportedToToken();
     error SlippageError();
@@ -89,22 +84,12 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         otherChainLiquidityManager = _otherChainLiquidityManager;
     }
 
-    function initialize(address _feeRecipient, uint256 _traderate) external onlyOwner {
+    function initialize(uint256 _traderate) external onlyOwner {
         if (initialized) {
             revert AlreadyInitialized();
         }
         initialized = false;
-        _setFeeRecipient(_feeRecipient);
         _setTradeRate(_traderate);
-    }
-
-    function _setFeeRecipient(address _feeRecipient) internal {
-        emit FeeRecipientChanged(feeRecipient, _feeRecipient);
-        feeRecipient = _feeRecipient;
-    }
-
-    function setFeeRecipient(address _feeRecipient) external onlyOwner {
-        _setFeeRecipient(_feeRecipient);
     }
 
     function _setTradeRate(uint256 _traderate) internal {
@@ -122,20 +107,6 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         (bool success,) = receiver.call{value: amount}(new bytes(0));
         if (!success) {
             revert ETHTransferFailed();
-        }
-    }
-
-    function collectFees() external {
-        address _recipient = feeRecipient;
-        if (_recipient == address(0)) {
-            revert NoFeeRecipientSet();
-        }
-
-        uint256 _fee = pendingFee;
-        if (_fee > 0) {
-            pendingFee = 0;
-            _transferEth(_recipient, _fee);
-            emit FeeCollected(_recipient, _fee);
         }
     }
 
@@ -165,10 +136,6 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
             revert SlippageError();
         }
 
-        // Calc profit (assuming 1:1 peg)
-        uint256 estimatedFeeEarned = amountIn - amountOut;
-        pendingFee += estimatedFeeEarned;
-
         // Build CCIP message
         IRouterClient router = IRouterClient(this.getRouter());
 
@@ -186,6 +153,8 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
         uint256 ccipFees = router.getFee(otherChainSelector, message);
 
         // TODO: ccipFee not accounted for
+        // // Calc profit (assuming 1:1 peg)
+        // uint256 estimatedFeeEarned = amountIn - amountOut;
         // if (estimatedFeeEarned < ccipFees) {
         //     revert NonProfitableTrade();
         // }
@@ -243,7 +212,12 @@ contract CrossChainLiquidityManager is OwnableOperable, CCIPReceiver {
             additionalLiquidityNeeded = 0;
         }
 
-        emit LiquidityUpdated();
+        emit LiquidityAdded(msg.sender, msg.value);
+    }
+
+    function removeLiquidity(address recipient, uint256 amount) external onlyOwner {
+        _transferEth(recipient, amount);
+        emit LiquidityRemoved(recipient, amount);
     }
 
     receive() external payable {
